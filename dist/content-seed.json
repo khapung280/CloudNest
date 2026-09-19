@@ -1,0 +1,233 @@
+{
+  "home": {
+    "label": "YOUR NEXT CHAPTER, BY DESIGN",
+    "line1": "Big ideas.",
+    "line2": "Beautifully",
+    "line3": "built.",
+    "description": "We turn ambitious ideas into brands, websites, and digital experiences that move you forward.",
+    "buttonText": "Let’s build something",
+    "buttonLink": "#contact",
+    "secondaryText": "Explore our services",
+    "secondaryLink": "#services",
+    "image": "/assets/hero.webp",
+    "aboutTitle": "Thoughtful by design. Built for what’s next.",
+    "aboutDescription": "Good design gives your idea a voice. Good development gives it a foundation. We bring both together, with a clear plan and close collaboration from the first conversation to launch.",
+    "servicesTitle": "One creative partner. Every digital possibility.",
+    "servicesDescription": "From the first spark to the next stage of growth, our amazing services bring your entire digital presence together.",
+    "projectsTitle": "Selected work",
+    "projectsDescription": "A closer look at what we create.",
+    "contactTitle": "Something great starts with a hello.",
+    "contactDescription": "Tell us what you’re imagining. Let’s give it a place to grow."
+  },
+  "services": [
+    {
+      "id": "service-card-0",
+      "status": "published",
+      "name": "Website Design & Development",
+      "shortDescription": "Distinctive websites that feel effortless to use, look sharp on every screen, and make the next step clear.",
+      "tags": "UI/UX · RESPONSIVE · E-COMMERCE",
+      "icon": "⌘",
+      "description": "A clear, considered website that gives your business a sharper first impression and makes it easy for the right people to take the next step.",
+      "deliverables": "Discovery and content direction\nResponsive page and interface design\nAccessible, mobile-first development\nCMS, forms, or commerce setup\nLaunch checks and handover",
+      "process": "Understand your audience and goals\nShape the structure and visual direction\nDesign, build, and refine together\nLaunch with a clear handover",
+      "image": ""
+    },
+    {
+      "id": "service-card-1",
+      "status": "published",
+      "name": "Brand Design & Guideline",
+      "shortDescription": "A clear identity with personality. Logos, visual systems, and guidelines that keep your brand consistent.",
+      "tags": "IDENTITY · LOGO · BRAND SYSTEMS",
+      "icon": "✳",
+      "description": "A distinctive identity system that gives your business a recognisable voice across every place people meet your brand.",
+      "deliverables": "Brand positioning foundations\nLogo and responsive mark system\nColour, typography, and image direction\nSocial and presentation templates\nPractical brand guidelines",
+      "process": "Define the character of your brand\nExplore and test a focused direction\nBuild the identity system\nPackage the rules for everyday use",
+      "image": ""
+    },
+    {
+      "id": "service-card-2",
+      "status": "published",
+      "name": "Digital Marketing",
+      "shortDescription": "Content and campaigns shaped around your audience, your voice, and the goals that matter to your business.",
+      "tags": "STRATEGY · CONTENT · SOCIAL",
+      "icon": "◎",
+      "description": "A practical marketing plan and content direction built around your audience, your voice, and the business outcome you want to improve.",
+      "deliverables": "Audience and channel review\nContent pillars and campaign ideas\nSocial content direction\nMonthly or launch campaign planning\nPerformance review and next actions",
+      "process": "Find the clearest opportunity\nPlan the message and channel mix\nCreate, publish, and learn\nImprove the next cycle with evidence",
+      "image": ""
+    },
+    {
+      "id": "service-card-3",
+      "status": "published",
+      "name": "Paid Advertising",
+      "shortDescription": "Purposeful campaigns with thoughtful creative, focused targeting, and ongoing performance reviews.",
+      "tags": "CAMPAIGNS · CREATIVE · REPORTING",
+      "icon": "↗",
+      "description": "Focused paid campaigns with thoughtful creative, clear targeting, and simple reporting that connects spend to meaningful action.",
+      "deliverables": "Campaign and audience strategy\nAd creative and copy direction\nLanding page recommendations\nTracking and conversion setup\nPerformance reporting and optimisation",
+      "process": "Set the goal and success measure\nBuild audiences and creative tests\nLaunch with careful tracking\nReview results and refine",
+      "image": ""
+    },
+    {
+      "id": "service-card-4",
+      "status": "published",
+      "name": "Search Engine Optimization",
+      "shortDescription": "Make it easier for the right people to find you through useful content and a well-structured website.",
+      "tags": "TECHNICAL SEO · CONTENT · AUDITS",
+      "icon": "⊕",
+      "description": "A stronger search foundation that helps the right people find your business through useful content and a well-structured website.",
+      "deliverables": "Technical SEO review\nSearch intent and keyword direction\nOn-page structure and metadata\nContent opportunities and briefs\nProgress tracking and recommendations",
+      "process": "Audit the current search foundation\nPrioritise the highest-value fixes\nImprove pages and content\nMeasure visibility and iterate",
+      "image": ""
+    }
+  ],
+  "founders": [
+    {
+      "id": "paruhang",
+      "name": "Paruhang Khapung",
+      "role": "Founder",
+      "email": "Hanglimbu6221@gmail.com",
+      "phone": "9817387000",
+      "image": "",
+      "status": "published"
+    },
+    {
+      "id": "anish",
+      "name": "Anish Jha",
+      "role": "Founder",
+      "email": "anishjha553@gmail.com",
+      "phone": "9704341841",
+      "image": "",
+      "status": "published"
+    }
+  ],
+  "pricing": [
+    {
+      "id": "price-card-0",
+      "status": "published",
+      "name": "Launch",
+      "description": "For new businesses ready to make their first impression count.",
+      "price": "Custom quote",
+      "note": "A focused project, scoped together",
+      "label": "A STRONG FOUNDATION",
+      "features": "Brand and website discovery\nResponsive business website\nCore search-friendly structure\nLaunch guidance and handover",
+      "recommended": false
+    },
+    {
+      "id": "price-card-1",
+      "status": "published",
+      "name": "Grow",
+      "description": "For brands ready for a stronger presence and a joined-up growth plan.",
+      "price": "Custom quote",
+      "note": "Project or ongoing collaboration",
+      "label": "BUILD YOUR MOMENTUM",
+      "features": "Website design or redesign\nBrand identity and guidelines\nContent and campaign planning\nSEO and performance reviews",
+      "recommended": true
+    },
+    {
+      "id": "price-card-2",
+      "status": "published",
+      "name": "Scale",
+      "description": "For businesses that need a custom digital solution built around them.",
+      "price": "Custom quote",
+      "note": "Tailored to complexity and milestones",
+      "label": "BEYOND THE OFF-THE-SHELF",
+      "features": "Product and technical discovery\nAdvanced website features\nBusiness tool integrations\nAgreed support and growth roadmap",
+      "recommended": false
+    }
+  ],
+  "faq": [
+    {
+      "id": "faq-list-details-0",
+      "status": "published",
+      "question": "What can Cloud Nest help with?",
+      "answer": "We cover website design and development, brand design and guidelines, digital marketing, paid advertising, and SEO. You can start with a single service or discuss a connected project."
+    },
+    {
+      "id": "faq-list-details-1",
+      "status": "published",
+      "question": "How much will my project cost?",
+      "answer": "Pricing depends on the scope, complexity, content, and support you need. The Launch, Grow, and Scale options are starting points for a conversation. A project quote should set out deliverables, costs, and payment milestones before work begins."
+    },
+    {
+      "id": "faq-list-details-2",
+      "status": "published",
+      "question": "How long does a website take?",
+      "answer": "The timeline depends on the number of pages, functionality, available content, and review rounds. We agree on milestones after understanding your project, so you know what is needed and when."
+    },
+    {
+      "id": "faq-list-details-3",
+      "status": "published",
+      "question": "Can you improve an existing website or brand?",
+      "answer": "Yes. Share your current website or brand materials and what you want to improve. We can discuss a focused update, a redesign, or a broader refresh based on what already works."
+    },
+    {
+      "id": "faq-list-details-4",
+      "status": "published",
+      "question": "Will the website work on mobile?",
+      "answer": "Responsive layouts are part of our website service. Navigation, text, images, and forms are designed to adapt to phones, tablets, and desktop screens."
+    },
+    {
+      "id": "faq-list-details-5",
+      "status": "published",
+      "question": "What should I prepare before getting started?",
+      "answer": "Bring your business goals, audience, any existing brand assets, a few references, and an idea of your budget and timeline. If the brief is still taking shape, start with the problem you want to solve."
+    }
+  ],
+  "projects": [],
+  "blog": [
+    {
+      "id": "website",
+      "slug": "website",
+      "title": "Before you redesign your website, ask these five questions",
+      "category": "Web design",
+      "excerpt": "A redesign is a chance to make your website more useful. Before choosing colours or collecting references, write down what needs to change. Is the offer unclear? Is it difficult to enquire? Does the website no longer reflect your business? A clear problem gives the project a purpose.",
+      "body": "Start with the problem, not the mood board.\nA redesign is a chance to make your website more useful. Before choosing colours or collecting references, write down what needs to change. Is the offer unclear? Is it difficult to enquire? Does the website no longer reflect your business? A clear problem gives the project a purpose.\n\n1. Who is the website for?\nDescribe the people you want to reach, what they need, and what they may already know. A first-time customer needs a different introduction from an existing client. Use that distinction to decide what belongs on the page.\n\n2. What should visitors do next?\nChoose the most useful next step for each page: understand a service, compare options, or start a conversation. Keep that action easy to find and explain what happens after someone takes it.\n\n3. What content can you bring?\nGather your service descriptions, photography, brand files, and answers to common questions. Identify anything that needs to be written or created. Content is part of the project, not something to squeeze in at the end.\n\n4. What should you keep?\nReview the existing website before replacing it. Keep useful information, clear language, and familiar routes that still serve your audience. A redesign can build on what works.\n\n5. How will you judge the result?\nSet a practical goal you can review after launch. That might be fewer confused enquiries, a simpler booking process, or a clearer explanation of your services. Agree on the goal before judging the design.",
+      "image": "",
+      "status": "published"
+    },
+    {
+      "id": "brand",
+      "slug": "brand",
+      "title": "A good brand is more than a beautiful logo",
+      "category": "Brand strategy",
+      "excerpt": "A logo is an important part of a brand, but it rarely appears alone. It sits next to words, photographs, colour, typography, and layout. Those choices need to feel like they belong to the same business.",
+      "body": "Think in systems.\nA logo is an important part of a brand, but it rarely appears alone. It sits next to words, photographs, colour, typography, and layout. Those choices need to feel like they belong to the same business.\n\nStart with what you want to communicate.\nWrite down what your business does, who it serves, and how you want people to describe it. Be specific. “Clear and approachable” gives a designer a more useful direction than “make it premium” on its own.\n\nGive every element a job.\nChoose type that suits the way your business communicates. Use colour with a clear hierarchy. Decide how images should feel, and how headings should sound. A useful identity makes those decisions easier to repeat.\n\nCreate guidelines people can actually use.\nA brand guide should answer practical questions: which logo belongs on a dark background, how much space it needs, which colours and type styles to use, and what to avoid. Real examples make the rules easier to follow.\n\nLeave room for the brand to grow.\nTest the system across a website, a social post, and a simple document. It should feel connected without making every piece identical. The aim is a recognisable identity that can adapt to the work ahead.",
+      "image": "",
+      "status": "published"
+    },
+    {
+      "id": "project",
+      "slug": "project",
+      "title": "How to turn a big idea into a useful project brief",
+      "category": "Studio notes",
+      "excerpt": "A good brief starts a useful conversation. It explains what you are trying to achieve and gives your creative or development partner enough context to ask better questions.",
+      "body": "You do not need all the answers.\nA good brief starts a useful conversation. It explains what you are trying to achieve and gives your creative or development partner enough context to ask better questions.\n\nDescribe the problem in one paragraph.\nExplain what happens today, who it affects, and what you want to improve. Keep the focus on the need before choosing a particular feature or technology.\n\nSeparate essentials from possibilities.\nList what the first version must do, then keep future ideas in a separate list. This makes it easier to discuss a practical starting scope without losing the bigger picture.\n\nShare references with a reason.\nWhen you share a website or visual reference, explain what you like about it. It might be the navigation, tone, clarity, or use of space. A reference becomes more useful when your partner understands the reason behind it.\n\nBe open about constraints.\nInclude your intended launch date, budget range if known, available content, and who will review the work. Mention existing systems that need to be connected. These details help shape a realistic plan.\n\nEnd with a definition of success.\nDescribe what a useful finished result would let you or your customers do. That shared definition gives both sides something concrete to work towards.",
+      "image": "",
+      "status": "published"
+    }
+  ],
+  "settings": {
+    "companyName": "Cloud Nest",
+    "tagline": "A home for your next big idea.",
+    "logo": "/assets/cloud-nest-logo.png",
+    "favicon": "",
+    "email": "Hanglimbu6221@gmail.com",
+    "phone": "9817387000",
+    "address": "",
+    "facebook": "",
+    "instagram": "",
+    "linkedin": "",
+    "youtube": "",
+    "copyright": "© 2026 Cloud Nest. All rights reserved."
+  },
+  "seo": {
+    "title": "Cloud Nest — Thoughtful design. Powerful digital experiences.",
+    "description": "Cloud Nest brings website design, brand identity, digital marketing, advertising, SEO together to help your business grow.",
+    "slug": "/",
+    "ogTitle": "Cloud Nest — Digital Design & Development",
+    "ogDescription": "Thoughtful design. Powerful digital experiences.",
+    "ogImage": "",
+    "keywords": "Cloud Nest, website design, branding, digital marketing, SEO"
+  }
+}

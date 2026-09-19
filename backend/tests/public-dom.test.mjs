@@ -1,0 +1,28 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {JSDOM} from 'jsdom';
+const root=new URL('../../dist/',import.meta.url);
+const html=await readFile(new URL('index.html',root),'utf8');
+const scripts={};for(const name of ['cms.js','motion.js','app.js'])scripts[name]=await readFile(new URL(name,root),'utf8');
+const data=JSON.parse(await readFile(new URL('content-seed.json',root),'utf8'));
+test('CMS draft renders content, founders, service details and articles without runtime errors',async()=>{
+ const dom=new JSDOM(html,{url:'https://cloudnest.example/?preview=admin',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window;const errors=[];
+ w.addEventListener('error',e=>errors.push(e.error));
+ w.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
+ w.CSS={escape:v=>v};w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
+ w.sessionStorage.setItem('cn-preview-content',JSON.stringify(data));
+ const original=w.document.body.append.bind(w.document.body);
+ w.document.body.append=(...nodes)=>{for(const node of nodes){if(node.tagName==='SCRIPT'){try{w.eval(scripts[node.src.split('/').pop()]);node.onload()}catch(e){errors.push(e);node.onerror?.()}}else original(node)}};
+ await w.eval(scripts['cms.js']);
+ assert.equal(errors.length,0,errors.map(String).join('\n'));
+ assert.equal(w.document.querySelectorAll('.service-card').length,5);
+ assert.equal(w.document.querySelectorAll('.journal-card').length,3);
+ assert.equal(w.document.querySelectorAll('#faq details').length,data.faq.length);
+ assert.match(w.document.querySelector('.founder-grid').textContent,/9817387000/);
+ assert.match(w.document.querySelector('.founder-grid').textContent,/anishjha553@gmail.com/);
+ w.document.querySelector('.service-card').click();assert.equal(w.document.querySelector('#service-dialog').open,true);assert.equal(w.document.querySelector('#service-dialog-title').textContent,data.services[0].name);
+ w.document.querySelector('.journal-card').click();assert.equal(w.document.querySelector('#article-title').textContent,data.blog[0].title);
+ assert.match(w.document.querySelector('.form-note').textContent,/does not send an enquiry/);
+ dom.window.close();
+});
