@@ -8,21 +8,21 @@ This is the portable backend requested in **Backend for Cloud Nest.docx**. The e
 - PostgreSQL-backed draft and published content with optimistic revision checks. A consolidated JSONB content document preserves a consistent whole-site publish; users, sessions, messages, media, activity and rate limits have separate relational tables. This adapts the document's proposed table layout without losing the corresponding editors.
 - Node/Express REST API. Same-origin opaque, HttpOnly session cookies (hashed in PostgreSQL), scrypt password hashing, CSRF protection, origin checks and database-backed rate limiting. Session duration: 8 hours, or 7 days when selected. Server-enforced Super Admin, Editor and Support roles.
 - Admin uses accessible native HTML controls and vanilla JavaScript to preserve the current site's lightweight architecture. No framework migration is needed.
-- Uploaded PNG/JPEG/WebP files require a persistent mounted disk. File signatures, size and references are checked. SVG uploads are intentionally unsupported.
+- Uploaded PNG/JPEG/WebP files use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is configured, or a persistent mounted disk when `UPLOAD_DIR` is configured for non-Vercel hosting. File signatures, size and references are checked. SVG uploads are intentionally unsupported.
 - Contact enquiries are stored independently of email notification success. Optional Resend notifications are configured with hosting secrets; no key is included in source.
 - Backend serves public article URLs, sitemap and server-rendered homepage SEO. The original static host receives client-rendered content updates after API configuration; for server-rendered crawler metadata, use the backend-served public website/custom domain.
 
-## Deploy the backend
+## Deploy on Vercel
 
-1. Use Node 22+ on a host with a persistent disk (for example an existing Render/Railway Node service). Connect this repository. Run commands from `backend/`.
-2. Provision PostgreSQL and configure `DATABASE_URL` using the provider's required verified TLS settings. Do not disable certificate verification.
-3. Copy the variable names from `.env.example` into the host's secret settings. Set `PUBLIC_ORIGIN` to the HTTPS backend origin, without a trailing slash; `WEBSITE_ORIGIN` to `https://cloud-nest-studio.hanglimbu6221.chatgpt.site`; and `UPLOAD_DIR` to a persistent mounted directory. Configure `TRUST_PROXY_HOPS` to the verified number of reverse proxies for that host (typically 1); leave 0 for direct access. Do not guess this setting.
+1. Connect the GitHub repository to Vercel from the repository root. Keep the included `vercel.json`.
+2. Provision PostgreSQL, preferably Neon for Vercel, and configure `DATABASE_URL` using the provider's required verified TLS settings. Do not disable certificate verification.
+3. Add Vercel Blob to the project so `BLOB_READ_WRITE_TOKEN` is available for CMS uploads.
+4. Add these Vercel environment variables: `DATABASE_URL`, `NODE_ENV=production`, `PUBLIC_ORIGIN`, `WEBSITE_ORIGIN`, `SESSION_SECRET`, and `BLOB_READ_WRITE_TOKEN`. Set both origins to the final HTTPS Vercel/custom domain without a trailing slash.
 4. Generate a random `SESSION_SECRET` with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` and store it as a secret.
-5. Build/install: `npm ci --omit=dev`. Release migration: `npm run migrate`. Start: `npm start`. `/api/health` is the health check. The migration does not overwrite existing content.
-6. In the host's private console, temporarily set `ADMIN_PASSWORD` to a unique password with 12–128 characters. Run `npm run create-admin`, enter the owner's email and name, then remove `ADMIN_PASSWORD`. This can also securely reset the password of an existing account; existing sessions are invalidated. There is no default or publicly claimable admin account.
-7. Open `https://YOUR_BACKEND_ORIGIN/admin/` and sign in. Keep login on this backend origin: third-party cross-site cookies are not required. Add Editor/Support accounts through Team & access.
-8. Set `window.CLOUD_NEST_API_ORIGIN` in `dist/site-config.js` to the backend HTTPS origin and republish the existing static Site. The public homepage will fetch published content and submit enquiries; its `/admin/` preview includes a link to the secure live admin. Alternatively serve the whole website from the backend's custom domain.
-9. Configure database backups and persistent-disk backups on the chosen host. No paid resources are provisioned by this code.
+5. Deploy. Vercel runs `cd backend && npm ci --omit=dev` and `cd backend && npm run migrate`. `/api/health` is the health check. The migration does not overwrite existing custom content.
+6. Create the first admin account from a trusted local/CLI environment that has production `DATABASE_URL` and temporary `ADMIN_PASSWORD` set: `cd backend && npm run create-admin`. Enter the owner's email and name, then remove `ADMIN_PASSWORD`. This can also securely reset the password of an existing account; existing sessions are invalidated. There is no default or publicly claimable admin account.
+7. Open `https://YOUR_VERCEL_DOMAIN/admin/` and sign in. Add Editor/Support accounts through Team & access.
+8. Configure database backups in the Postgres provider. Vercel Blob stores public website media; do not upload private documents.
 
 ## Optional email
 
