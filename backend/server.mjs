@@ -11,6 +11,34 @@ export function createApp({db,config}){
  const app=express();const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist');
  const production=config.production;const cookieName=production?'__Host-cn_session':'cn_session';
  const origins=new Set([config.origin,config.websiteOrigin]);
+ const mediaStorage=config.mediaStorage||'disk';
+ const mediaUrl=storageName=>/^https:\/\//.test(storageName)?storageName:`${config.origin}/uploads/${storageName}`;
+ async function putMedia(storageName,buffer,contentType){
+  if(mediaStorage==='vercel-blob'){
+   const {put}=await import('@vercel/blob');
+   const uploaded=await put(storageName,buffer,{access:'public',contentType,addRandomSuffix:false,allowOverwrite:true});
+   return uploaded.url;
+  }
+  const target=path.join(config.uploadDir,storageName);await mkdir(path.dirname(target),{recursive:true});await writeFile(target,buffer,{flag:'wx'});
+  return storageName;
+ }
+ async function replaceMedia(storageName,buffer,contentType){
+  if(mediaStorage==='vercel-blob'){
+   const {put}=await import('@vercel/blob');
+   const pathname=new URL(storageName).pathname.replace(/^\/+/,'');
+   const uploaded=await put(pathname,buffer,{access:'public',contentType,addRandomSuffix:false,allowOverwrite:true});
+   return uploaded.url;
+  }
+  const target=path.join(config.uploadDir,storageName);await mkdir(path.dirname(target),{recursive:true});await writeFile(target,buffer);
+  return storageName;
+ }
+ async function deleteMedia(storageName){
+  if(mediaStorage==='vercel-blob'){
+   const {del}=await import('@vercel/blob');
+   await del(storageName);return;
+  }
+  await unlink(path.join(config.uploadDir,storageName)).catch(e=>{if(e.code!=='ENOENT')throw e});
+ }
  app.disable('x-powered-by');
  if(config.proxyHops)app.set('trust proxy',config.proxyHops);
  app.use((req,res,next)=>{
@@ -95,25 +123,25 @@ export function createApp({db,config}){
  app.put('/api/admin/messages/:id',allow('super_admin','support'),async(req,res)=>{if(!['new','read','replied','closed'].includes(req.body.status))return res.status(400).json({error:'Invalid status.'});const {rowCount}=await db.query('UPDATE messages SET status=$1 WHERE id=$2',[req.body.status,req.params.id]);res.status(rowCount?200:404).json({ok:!!rowCount})});
  app.delete('/api/admin/messages/:id',allow('super_admin','support'),async(req,res)=>{await db.query('DELETE FROM messages WHERE id=$1',[req.params.id]);await audit(req.user.name,'Deleted an enquiry');res.json({ok:true})});
  const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:8*1024*1024,files:1,fields:3}}).single('file');
- app.get('/api/admin/media',allow('super_admin','editor'),async(req,res)=>{const {rows}=await db.query('SELECT * FROM media ORDER BY created_at DESC');res.json(rows.map(m=>({...m,url:`${config.origin}/uploads/${m.storage_name}`})))});
+ app.get('/api/admin/media',allow('super_admin','editor'),async(req,res)=>{const {rows}=await db.query('SELECT * FROM media ORDER BY created_at DESC');res.json(rows.map(m=>({...m,url:mediaUrl(m.storage_name)})))});
  function imageType(b){if(b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))return ['png','image/png'];if(b[0]===255&&b[1]===216&&b[2]===255)return ['jpg','image/jpeg'];if(b.subarray(0,4).toString()==='RIFF'&&b.subarray(8,12).toString()==='WEBP')return ['webp','image/webp'];return null;}
  app.post('/api/admin/media',allow('super_admin','editor'),upload,async(req,res)=>{
   const f=req.file,type=f&&imageType(f.buffer);if(!type)return res.status(400).json({error:'Upload a PNG, JPEG or WebP image (up to 8 MB).'});
-  const id=randomUUID(),name=`${id}.${type[0]}`;await mkdir(config.uploadDir,{recursive:true});await writeFile(path.join(config.uploadDir,name),f.buffer,{flag:'wx'});
-  try{await db.query('INSERT INTO media(id,filename,storage_name,mime_type,size) VALUES($1,$2,$3,$4,$5)',[id,f.originalname.slice(0,200),name,type[1],f.size])}catch(e){await unlink(path.join(config.uploadDir,name));throw e;}
-  await audit(req.user.name,'Uploaded an image');res.status(201).json({id,url:`${config.origin}/uploads/${name}`});
+  const id=randomUUID(),name=`${id}.${type[0]}`;const stored=await putMedia(name,f.buffer,type[1]);
+  try{await db.query('INSERT INTO media(id,filename,storage_name,mime_type,size) VALUES($1,$2,$3,$4,$5)',[id,f.originalname.slice(0,200),stored,type[1],f.size])}catch(e){await deleteMedia(stored);throw e;}
+  await audit(req.user.name,'Uploaded an image');res.status(201).json({id,url:mediaUrl(stored)});
  });
  app.put('/api/admin/media/:id',allow('super_admin','editor'),async(req,res)=>{const {filename,alt_text=''}=req.body;if(typeof filename!=='string'||!filename.trim()||filename.length>200||typeof alt_text!=='string'||alt_text.length>500)return res.status(400).json({error:'Check the image name and alt text.'});await db.query('UPDATE media SET filename=$1,alt_text=$2 WHERE id=$3',[filename,alt_text,req.params.id]);res.json({ok:true})});
  app.post('/api/admin/media/:id/replace',allow('super_admin','editor'),upload,async(req,res)=>{
   const {rows}=await db.query('SELECT * FROM media WHERE id=$1',[req.params.id]);if(!rows[0])return res.sendStatus(404);
   const type=req.file&&imageType(req.file.buffer);if(!type||type[1]!==rows[0].mime_type)return res.status(400).json({error:'Replace with the same image format (PNG, JPEG or WebP).'});
-  await writeFile(path.join(config.uploadDir,rows[0].storage_name),req.file.buffer);await db.query('UPDATE media SET size=$1 WHERE id=$2',[req.file.size,req.params.id]);await audit(req.user.name,'Replaced an image');res.json({ok:true});
+  const stored=await replaceMedia(rows[0].storage_name,req.file.buffer,type[1]);await db.query('UPDATE media SET storage_name=$1,size=$2 WHERE id=$3',[stored,req.file.size,req.params.id]);await audit(req.user.name,'Replaced an image');res.json({ok:true});
  });
  app.delete('/api/admin/media/:id',allow('super_admin','editor'),async(req,res)=>{
   const {rows}=await db.query('SELECT * FROM media WHERE id=$1',[req.params.id]);if(!rows[0])return res.sendStatus(404);
   const {rows:c}=await db.query('SELECT draft,published FROM content WHERE id=1');
   if(JSON.stringify(c[0]).includes(rows[0].storage_name))return res.status(409).json({error:'This image is used on the website. Remove it from the draft and publish before deleting.'});
-  await unlink(path.join(config.uploadDir,rows[0].storage_name)).catch(e=>{if(e.code!=='ENOENT')throw e});await db.query('DELETE FROM media WHERE id=$1',[req.params.id]);res.json({ok:true});
+  await deleteMedia(rows[0].storage_name);await db.query('DELETE FROM media WHERE id=$1',[req.params.id]);res.json({ok:true});
  });
  app.get('/api/admin/users',allow('super_admin'),async(req,res)=>{const {rows}=await db.query('SELECT id,name,email,role,active,created_at FROM users ORDER BY created_at');res.json(rows)});
  app.post('/api/admin/users',allow('super_admin'),async(req,res)=>{
@@ -140,7 +168,7 @@ export function createApp({db,config}){
  app.get('/robots.txt',(_req,res)=>res.type('txt').send(`User-agent: *\nDisallow: /admin\nDisallow: /api/admin\nSitemap: ${config.origin}/sitemap.xml\n`));
  const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  app.get('/sitemap.xml',async(_req,res)=>{const {rows}=await db.query('SELECT published FROM content WHERE id=1');const posts=publicContent(rows[0].published).blog;res.type('xml').send(`<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/',...posts.filter(p=>p.slug).map(p=>'/journal/'+p.slug)].map(p=>`<url><loc>${escape(config.origin+p)}</loc></url>`).join('')}</urlset>`)});
- app.get('/journal/:slug',async(req,res)=>{const {rows}=await db.query('SELECT published FROM content WHERE id=1');const content=publicContent(rows[0].published);const post=content.blog.find(p=>p.slug===req.params.slug);if(!post)return res.status(404).type('html').send('<h1>Article not found</h1><a href="/">Back to Cloud Nest</a>');res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(post.title)} — Cloud Nest</title><meta name="description" content="${escape(post.excerpt)}"><meta property="og:title" content="${escape(post.title)}"><meta property="og:description" content="${escape(post.excerpt)}">${post.image?`<meta property="og:image" content="${escape(new URL(post.image,config.origin).href)}">`:''}<link rel="stylesheet" href="/article.css"></head><body><main><a href="/">← ${escape(content.settings.companyName)}</a><p class="category">${escape(post.category)}</p><h1>${escape(post.title)}</h1><p class="intro">${escape(post.excerpt)}</p>${post.image?`<img src="${escape(post.image)}" alt="${escape(post.title)}">`:''}<article>${post.body.split('\n\n').map(p=>`<p>${escape(p).replaceAll('\n','<br>')}</p>`).join('')}</article><a href="/#journal">Back to journal →</a></main></body></html>`)});
+ app.get('/journal/:slug',async(req,res)=>{const {rows}=await db.query('SELECT published FROM content WHERE id=1');const content=publicContent(rows[0].published);const post=content.blog.find(p=>p.slug===req.params.slug);if(!post)return res.status(404).type('html').send(`<h1>Article not found</h1><a href="/">Back to ${escape(content.settings.companyName)}</a>`);res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(post.title)} — ${escape(content.settings.companyName)}</title><meta name="description" content="${escape(post.excerpt)}"><meta property="og:title" content="${escape(post.title)}"><meta property="og:description" content="${escape(post.excerpt)}">${post.image?`<meta property="og:image" content="${escape(new URL(post.image,config.origin).href)}">`:''}<link rel="stylesheet" href="/article.css"></head><body><main><a href="/">← ${escape(content.settings.companyName)}</a><p class="category">${escape(post.category)}</p><h1>${escape(post.title)}</h1><p class="intro">${escape(post.excerpt)}</p>${post.image?`<img src="${escape(post.image)}" alt="${escape(post.title)}">`:''}<article>${post.body.split('\n\n').map(p=>`<p>${escape(p).replaceAll('\n','<br>')}</p>`).join('')}</article><a href="/#journal">Back to journal →</a></main></body></html>`)});
  app.get('/',async(_req,res)=>{
   const {rows}=await db.query('SELECT published FROM content WHERE id=1');const {seo,settings}=rows[0].published;
   let html=await readFile(path.join(root,'index.html'),'utf8');html=html.replace(/<title>[\s\S]*?<\/title>/,`<title>${escape(seo.title)}</title>`).replace(/<meta name="description"[^>]*>/,`<meta name="description" content="${escape(seo.description)}">`);
@@ -157,7 +185,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)){
  const origin=process.env.PUBLIC_ORIGIN||'http://localhost:3000';
  const secret=process.env.SESSION_SECRET;
  if(!secret||secret.length<32)throw new Error('Set SESSION_SECRET to at least 32 random characters.');
- if(production&&(!origin.startsWith('https://')||!process.env.UPLOAD_DIR))throw new Error('Production requires an HTTPS PUBLIC_ORIGIN and a persistent UPLOAD_DIR.');
+ if(production&&(!origin.startsWith('https://')||(!process.env.UPLOAD_DIR&&!process.env.BLOB_READ_WRITE_TOKEN)))throw new Error('Production requires an HTTPS PUBLIC_ORIGIN and persistent media storage through UPLOAD_DIR or Vercel Blob.');
  const db=database();await db.query('SELECT 1');
- createApp({db,config:{production,origin,secret,proxyHops:Number(process.env.TRUST_PROXY_HOPS)||0,websiteOrigin:process.env.WEBSITE_ORIGIN||origin,uploadDir:process.env.UPLOAD_DIR||path.resolve('uploads'),mailKey:process.env.RESEND_API_KEY,mailFrom:process.env.MAIL_FROM,notifyEmail:process.env.NOTIFY_EMAIL}}).listen(Number(process.env.PORT)||3000,()=>console.log('Cloud Nest backend is ready.'));
+ createApp({db,config:{production,origin,secret,proxyHops:Number(process.env.TRUST_PROXY_HOPS)||0,websiteOrigin:process.env.WEBSITE_ORIGIN||origin,uploadDir:process.env.UPLOAD_DIR||path.resolve('uploads'),mediaStorage:process.env.BLOB_READ_WRITE_TOKEN?'vercel-blob':'disk',mailKey:process.env.RESEND_API_KEY,mailFrom:process.env.MAIL_FROM,notifyEmail:process.env.NOTIFY_EMAIL}}).listen(Number(process.env.PORT)||3000,()=>console.log('Cloud Nest backend is ready.'));
 }
