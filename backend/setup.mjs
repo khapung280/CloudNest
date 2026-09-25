@@ -3,13 +3,15 @@ import {randomUUID} from 'node:crypto';
 import {createInterface} from 'node:readline/promises';
 import {database} from './db.mjs';
 import {passwordHash,validateContent} from './security.mjs';
+import {migrateBrand} from './brand-migration.mjs';
 const db=database();
 try{
  if(process.argv[2]==='migrate'){
   await db.query(await readFile(new URL('./schema.sql',import.meta.url),'utf8'));
   const data=validateContent(JSON.parse(await readFile(new URL('../dist/content-seed.json',import.meta.url),'utf8')));
   await db.query('INSERT INTO content(id,draft,published) VALUES(1,$1,$1) ON CONFLICT(id) DO NOTHING',[JSON.stringify(data)]);
-  console.log('Database ready. Existing content was preserved.');
+  await migrateBrand(db);
+  console.log('Database ready. Cloud Nest defaults applied; custom content preserved.');
  }else if(process.argv[2]==='admin'){
   // Supply the password through the host secret environment, not command arguments.
   const rl=createInterface({input:process.stdin,output:process.stdout});
