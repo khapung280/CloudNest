@@ -5,6 +5,31 @@ import {JSDOM} from 'jsdom';
 const html=await readFile(new URL('../../dist/admin/index.html',import.meta.url),'utf8');
 const js=await readFile(new URL('../../dist/admin/admin.js',import.meta.url),'utf8');
 const seed=JSON.parse(await readFile(new URL('../../dist/content-seed.json',import.meta.url),'utf8'));
+test('support can moderate a review and send a public reply with CSRF protection',async()=>{
+ const dom=new JSDOM(html,{url:'https://cloudnest.example/admin/#reviews',runScripts:'outside-only'}),w=dom.window;
+ w.structuredClone=structuredClone;w.CLOUD_NEST_ADMIN_LIVE=true;
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
+ const review={id:'review-1',name:'A visitor',email:'private@example.test',rating:5,comment:'Very clear communication.',status:'pending',reply:'',created_at:'2026-09-26T10:00:00Z'};let saved;
+ w.fetch=async(url,options={})=>{
+  let value={};
+  if(url==='/content-seed.json')value=structuredClone(seed);
+  if(url==='/api/auth/me')value={user:{name:'Support',role:'support'},csrf:'review-csrf'};
+  if(url==='/api/public/content')value={content:structuredClone(seed)};
+  if(url==='/api/admin/reviews')value=[review];
+  if(url==='/api/admin/reviews/review-1'){
+   assert.equal(options.method,'PUT');assert.equal(options.headers['X-CSRF-Token'],'review-csrf');saved=JSON.parse(options.body);Object.assign(review,saved);
+  }
+  return {ok:true,json:async()=>value};
+ };
+ w.eval(js);await until(()=>w.document.querySelector('[data-action=review]'));
+ assert.equal(w.document.querySelector('a[href="#users"]'),null);
+ w.document.querySelector('[data-action=review]').click();
+ const form=w.document.querySelector('#review-moderation');form.elements.status.value='approved';form.elements.reply.value='Thank you for sharing.';
+ form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ await until(()=>saved&&!w.document.querySelector('#editor-dialog').open);
+ assert.deepEqual(saved,{status:'approved',reply:'Thank you for sharing.'});assert.match(w.document.querySelector('tbody').textContent,/Approved/);
+ w.close();
+});
 async function until(fn){for(let i=0;i<30;i++){if(fn())return;await new Promise(r=>setTimeout(r,10))}assert.fail('DOM did not reach the expected state')}
 test('admin preview edits real content, retains drafts and does not claim live publication',async()=>{
  const dom=new JSDOM(html,{url:'https://cloudnest.example/admin/',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window;

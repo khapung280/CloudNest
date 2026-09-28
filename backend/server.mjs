@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {mkdir,readFile,writeFile,unlink} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {database} from './db.mjs';
-import {roles,token,digest,passwordHash,passwordMatches,validateContent,publicContent,validateMessage} from './security.mjs';
+import {roles,token,digest,passwordHash,passwordMatches,validateContent,publicContent,validateMessage,validateReview} from './security.mjs';
 
 export function createApp({db,config}){
  const app=express();const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist');
@@ -84,6 +84,19 @@ export function createApp({db,config}){
   }
   res.status(201).json({ok:true});
  });
+ app.get('/api/public/reviews',async(req,res)=>{
+  const page=Math.max(1,Math.min(10000,Number.parseInt(req.query.page,10)||1));
+  const {rows:summary}=await db.query("SELECT count(*)::int AS total,COALESCE(round(avg(rating),1),0)::float AS average FROM reviews WHERE status='approved'");
+  const {rows}=await db.query("SELECT id,name,rating,comment,reply,created_at FROM reviews WHERE status='approved' ORDER BY created_at DESC,id DESC LIMIT 6 OFFSET $1",[(page-1)*6]);
+  res.json({reviews:rows,summary:summary[0],page,hasMore:page*6<summary[0].total});
+ });
+ app.post('/api/reviews',async(req,res)=>{
+  if(await limit(req,res,'review',3,3600))return;
+  if(req.body?.website)return res.status(202).json({ok:true});
+  let review;try{review=validateReview(req.body)}catch(e){return res.status(400).json({error:e.message})}
+  await db.query('INSERT INTO reviews(id,name,email,rating,comment) VALUES($1,$2,$3,$4,$5)',[randomUUID(),review.name,review.email,review.rating,review.comment]);
+  res.status(201).json({ok:true,status:'pending'});
+ });
  app.post('/api/auth/login',async(req,res)=>{
   if(req.get('origin')!==config.origin)return res.status(403).json({error:'Sign in from the admin website.'});
   if(await limit(req,res,'login',10,900))return;
@@ -101,6 +114,21 @@ export function createApp({db,config}){
  app.get('/api/auth/me',auth,(req,res)=>{const {csrf_token,...user}=req.user;res.json({user,csrf:csrf_token})});
  app.post('/api/auth/logout',auth,async(req,res)=>{await db.query('DELETE FROM sessions WHERE token_hash=$1',[req.sessionHash]);res.clearCookie(cookieName,cookieOptions).json({ok:true})});
  app.use('/api/admin',auth);
+ app.get('/api/admin/reviews',allow('super_admin','support'),async(req,res)=>{
+  const {rows}=await db.query('SELECT * FROM reviews ORDER BY created_at DESC LIMIT 500');res.json(rows);
+ });
+ app.put('/api/admin/reviews/:id',allow('super_admin','support'),async(req,res)=>{
+  const {status,reply}=req.body||{};
+  if(!['pending','approved','rejected'].includes(status)||typeof reply!=='string'||reply.length>2000)return res.status(400).json({error:'Choose a valid status and a reply up to 2000 characters.'});
+  const {rowCount}=await db.query('UPDATE reviews SET status=$1,reply=$2 WHERE id=$3',[status,reply.trim(),req.params.id]);
+  if(!rowCount)return res.status(404).json({error:'Review not found.'});
+  await audit(req.user.name,'Updated a review: '+status);res.json({ok:true});
+ });
+ app.delete('/api/admin/reviews/:id',allow('super_admin','support'),async(req,res)=>{
+  const {rowCount}=await db.query('DELETE FROM reviews WHERE id=$1',[req.params.id]);
+  if(!rowCount)return res.status(404).json({error:'Review not found.'});
+  await audit(req.user.name,'Deleted a review');res.json({ok:true});
+ });
  app.get('/api/admin/overview',async(req,res)=>{
   const [{rows:counts},{rows:recent},{rows:activity},{rows:content}]=await Promise.all([db.query("SELECT count(*)::int AS total,count(*) FILTER(WHERE status='new')::int AS unread FROM messages"),db.query('SELECT id,name,subject,status,created_at FROM messages ORDER BY created_at DESC LIMIT 5'),db.query('SELECT actor,action,created_at FROM activity ORDER BY id DESC LIMIT 8'),db.query('SELECT revision,published_revision,updated_at,published_at FROM content WHERE id=1')]);
   res.json({messages:counts[0],recentMessages:req.user.role==='editor'?[]:recent,activity,content:content[0]});

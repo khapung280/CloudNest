@@ -1,0 +1,69 @@
+'use strict';
+(() => {
+ const $=s=>document.querySelector(s);
+ const contact=$('#contact');contact.before($('#planner'),$('#reviews'));
+ const nav=document.createElement('a');nav.href='#reviews';nav.className='nav-link';nav.textContent='Reviews';$('#navigation').insertBefore(nav,$('#navigation .mobile-contact'));
+ const hero=$('.hero');
+ const stage=document.createElement('div');stage.id='hero-scene';stage.setAttribute('aria-hidden','true');hero.prepend(stage);
+ const controls=document.createElement('div');controls.className='scene-controls';controls.innerHTML='<span>DESIGN IN ANOTHER DIMENSION</span><button type="button" id="scene-toggle" aria-label="Pause 3D animation" title="Pause 3D animation" hidden>&#10074;&#10074;</button>';
+ hero.append(controls);
+ const module=document.createElement('script');module.type='module';module.src='/hero-scene.js';document.body.append(module);
+ const quick=document.createElement('a');quick.className='hero-planner-link';quick.href='#planner';quick.textContent='Build your project brief';$('.hero-content').append(quick);
+
+ const base=window.CLOUD_NEST_API_ORIGIN||location.origin;
+ const preview=new URLSearchParams(location.search).get('preview')==='admin';
+ if(preview){$('#review-form [type=submit]').disabled=true;$('#review-status').textContent='Draft preview. Submit reviews from the public website.'}
+ let page=1,loading=false;
+ const element=(tag,text,cls)=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e};
+ async function loadReviews(append=false){
+  if(loading)return;loading=true;$('#reviews-more').disabled=true;$('#reviews-retry').hidden=true;
+  try{
+   const response=await fetch(base+'/api/public/reviews?page='+(append?page+1:1),{signal:AbortSignal.timeout(12000)});
+   if(!response.ok)throw new Error();const result=await response.json();
+   if(!Array.isArray(result.reviews)||!result.summary)throw new Error();
+   const list=$('#review-list');if(!append)list.replaceChildren();
+   for(const r of result.reviews){
+    const card=element('article','','review-card');
+    const meta=element('div','','review-meta');meta.append(element('strong',r.name),element('span',r.rating+' / 5','review-rating'));card.append(meta);
+    card.append(element('p',r.comment,'review-comment'));
+    const time=element('time',new Date(r.created_at).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}));time.dateTime=r.created_at;card.append(time);
+    if(r.reply){const reply=element('div','','studio-reply');reply.append(element('strong','Studio reply'),element('p',r.reply));card.append(reply)}
+    list.append(card);
+   }
+   if(!result.summary.total)list.append(element('p','No published reviews yet. Be the first to share your experience.','reviews-empty'));
+   $('#review-average').textContent=result.summary.total?result.summary.average+' / 5':'Your voice matters';
+   $('#review-count').textContent=result.summary.total+' approved '+(result.summary.total===1?'review':'reviews');
+   page=result.page;$('#reviews-more').hidden=!result.hasMore;
+  }catch{
+   if(!append){$('#review-list').replaceChildren(element('p','Reviews could not be loaded. Please try again.'));$('#review-count').textContent='Reviews temporarily unavailable'}
+   $('#reviews-retry').hidden=false;$('#reviews-retry').onclick=()=>loadReviews(append);
+  }finally{loading=false;$('#reviews-more').disabled=false}
+ }
+ $('#reviews-more').addEventListener('click',()=>loadReviews(true));
+ loadReviews();
+ $('#review-form').addEventListener('submit',async e=>{
+  e.preventDefault();const form=e.currentTarget,button=form.querySelector('[type=submit]'),status=$('#review-status');
+  if(preview||button.disabled||!form.reportValidity())return;
+  button.disabled=true;button.textContent='Submitting...';status.textContent='';
+  const fd=new FormData(form),body=Object.fromEntries(fd);body.rating=Number(body.rating);
+  try{
+   const response=await fetch(base+'/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+   const result=await response.json();if(!response.ok)throw new Error(result.error||'Review could not be submitted.');
+   status.textContent='Thank you. Your review is awaiting approval.';form.reset();
+  }catch(error){status.textContent=error.name==='TimeoutError'?'Request timed out. Please try again.':error.message||'Unable to submit. Please try again.'}
+  finally{button.disabled=false;button.textContent='Submit review'}
+ });
+
+ const planner=$('#planner-form');
+ function brief(){const fd=new FormData(planner);return {kind:fd.get('kind'),features:fd.getAll('features'),timing:fd.get('timing')}}
+ planner.addEventListener('change',()=>{const b=brief();$('#planner-kind').textContent=b.kind;$('#planner-features').replaceChildren(...['Responsive design',...b.features].map(f=>element('li',f)));$('#planner-timing').textContent='Timing: '+b.timing});
+ planner.addEventListener('submit',e=>{
+  e.preventDefault();const b=brief(),message=$('#project-form textarea[name=message]');
+  const summary='Project: '+b.kind+'\nFeatures: '+['Responsive design',...b.features].join(', ')+'\nPreferred timing: '+b.timing;
+  const next=message.value.trim()?message.value.trim()+'\n\n'+summary:summary;
+  if(next.length>message.maxLength){$('#planner-status').textContent='Your message is too long to add the brief. Please shorten it first.';return}
+  message.value=next;
+  const service=$('#service-select'),match=[...service.options].find(o=>b.kind==='Brand identity'?/brand/i.test(o.value):/website/i.test(o.value));if(match)service.value=match.value;
+  location.hash='contact';message.focus({preventScroll:true});$('#form-status').textContent='Your brief is added. Complete your details, then send your enquiry.';
+ });
+})();

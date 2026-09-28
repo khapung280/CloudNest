@@ -32,3 +32,13 @@ Configure these Vercel environment variables before the first deploy:
 After deployment, create the first admin account from a trusted local/CLI environment with `ADMIN_PASSWORD` set and `cd backend && npm run create-admin`.
 
 Existing local database content and uploaded photos must be migrated separately. They are not part of this repository. Never commit passwords or `.env` files. See `backend/README.md` for setup details.
+
+## Reviews and cinematic homepage
+
+Visitors can leave a 1-5 star review and comment. Submissions are stored as pending; in **Admin > Reviews**, a Super Admin or Support user can approve, reject, reply or delete. Only approved reviews and replies appear publicly. Reviewer email addresses are private. Public submissions have validation, a honeypot and a three-attempt hourly IP limit; moderation uses the existing session, role and CSRF checks.
+
+The project planner builds a brief from selected services and features, preserving any existing enquiry text. The visitor still confirms and sends the enquiry through the existing contact form.
+
+The hero loads pinned Three.js 0.180.0 from jsDelivr. It runs at a capped frame rate, stops outside the viewport or in a background tab, respects reduced motion, and has a pause button. Data-saving connections keep the existing artwork. If the CDN or WebGL is unavailable, the artwork remains visible and forms still work.
+
+Deploy all changed files together. The existing Vercel build command runs `npm run migrate`, creating the reviews table without removing current content, accounts or enquiries. No new environment variables or paid services are required. After deployment, submit a test review, approve it in **Admin > Reviews**, and check that it appears on the homepage with no email address. Check the 3D scene and forms on desktop and mobile before treating the visual update as verified.
