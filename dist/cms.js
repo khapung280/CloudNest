@@ -37,7 +37,7 @@ if(data){
 }
 window.cloudNestEnquiryConnected=connected;
 // Attach the existing navigation, dialogs and motion only after CMS rendering.
-for(const src of ['motion.js','app.js'])await new Promise(resolve=>{const script=document.createElement('script');script.src='/'+src;script.onload=resolve;script.onerror=resolve;document.body.append(script)});
+for(const src of ['experience.js','motion.js','app.js'])await new Promise(resolve=>{const script=document.createElement('script');script.src='/'+src;script.onload=resolve;script.onerror=resolve;document.body.append(script)});
 if(data){
  document.querySelectorAll('[data-project]').forEach(b=>b.addEventListener('click',()=>{const r=data.projects.find(v=>v.id===b.dataset.project);const d=$('#article-dialog');$('#article-title').textContent=r.title;$('#article-body').innerHTML=`<p>${esc(r.client)} · ${esc(r.category)}</p><p>${esc(r.description)}</p><p>${esc(r.technologies)}</p>${image(r.image,r.title,'cms-project-image')}${lines(r.gallery).map(u=>image(u,r.title,'cms-project-image')).join('')}${safe(r.url)?`<p><a class="button outline" href="${esc(safe(r.url))}" target="_blank" rel="noopener noreferrer">Visit project ↗</a></p>`:''}`;d.showModal();document.body.style.overflow='hidden';d.addEventListener('close',()=>b.focus(),{once:true});}));
 }

@@ -99,6 +99,36 @@ test('admin runtime, public metadata, articles, robots and sitemap are served',a
  assert.match(await (await fetch(origin+'/sitemap.xml')).text(),/journal\/website/);
  assert.match(await (await fetch(origin+'/robots.txt')).text(),/Disallow: \/admin/);
 });
+test('reviews require validation, approval and authorization; public responses keep email private',async()=>{
+ const body={name:'Review visitor',email:'private@example.test',rating:4,comment:'The team explained the project clearly.'};
+ assert.equal((await request('/reviews',{method:'POST',body:{...body,rating:6}})).status,400);
+ assert.equal((await request('/reviews',{method:'POST',body,headers:{origin:'https://evil.example'}})).status,403);
+ assert.equal((await request('/reviews',{method:'POST',body})).status,201);
+ assert.equal((await request('/public/reviews')).body.summary.total,0);
+ assert.equal((await request('/admin/reviews')).status,401);
+ assert.equal((await request('/admin/reviews',{session:editor})).status,403);
+ const list=await request('/admin/reviews',{session:support});
+ assert.equal(list.body[0].status,'pending');assert.equal(list.body[0].email,body.email);
+ const id=list.body[0].id;
+ assert.equal((await request('/admin/reviews/'+id,{method:'PUT',session:admin,headers:{'X-CSRF-Token':'bad'},body:{status:'approved',reply:''}})).status,403);
+ assert.equal((await request('/admin/reviews/'+id,{method:'PUT',session:support,body:{status:'approved',reply:'Thank you for your feedback.'}})).status,200);
+ let pub=await request('/public/reviews');assert.equal(pub.body.summary.average,4);assert.equal(pub.body.reviews[0].reply,'Thank you for your feedback.');assert.equal(pub.body.reviews[0].email,undefined);
+ assert.equal((await request('/admin/reviews/'+id,{method:'PUT',session:admin,body:{status:'rejected',reply:''}})).status,200);
+ assert.equal((await request('/public/reviews')).body.summary.total,0);
+ assert.equal((await request('/reviews',{method:'POST',body:{...body,website:'spam.example'}})).status,202);
+ assert.equal((await request('/reviews',{method:'POST',body})).status,429);
+ assert.equal((await request('/admin/reviews',{session:admin})).body.length,1);
+ assert.equal((await request('/admin/reviews/'+id,{method:'DELETE',session:admin})).status,200);
+ assert.equal((await request('/admin/reviews/'+id,{method:'DELETE',session:admin})).status,404);
+});
+test('public reviews paginate approved results and summary includes all approved reviews',async()=>{
+ for(let i=0;i<8;i++)await db.query("INSERT INTO reviews(id,name,email,rating,comment,status) VALUES($1,$2,$3,$4,$5,$6)",[randomUUID(),'Visitor '+i,'private@example.test',i%2?4:5,'A thoughtful and helpful collaboration.',i===7?'pending':'approved']);
+ const first=(await request('/public/reviews')).body,second=(await request('/public/reviews?page=2')).body;
+ assert.equal(first.summary.total,7);assert.equal(first.reviews.length,6);assert.equal(first.hasMore,true);assert.equal(second.reviews.length,1);assert.equal(second.hasMore,false);
+ assert.equal(new Set([...first.reviews,...second.reviews].map(r=>r.id)).size,7);
+ assert.equal(JSON.stringify(first).includes('private@example.test'),false);
+ await db.query('DELETE FROM reviews');
+});
 test('logout invalidates a session on the server',async()=>{
  assert.equal((await request('/auth/logout',{method:'POST',session:support,body:{}})).status,200);
  assert.equal((await request('/auth/me',{session:support})).status,401);

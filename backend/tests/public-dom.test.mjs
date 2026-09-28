@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {JSDOM} from 'jsdom';
 const root=new URL('../../dist/',import.meta.url);
 const html=await readFile(new URL('index.html',root),'utf8');
-const scripts={};for(const name of ['cms.js','motion.js','app.js'])scripts[name]=await readFile(new URL(name,root),'utf8');
+const scripts={};for(const name of ['cms.js','motion.js','app.js','experience.js'])scripts[name]=await readFile(new URL(name,root),'utf8');
 const data=JSON.parse(await readFile(new URL('content-seed.json',root),'utf8'));
 test('CMS draft renders content, founders, service details and articles without runtime errors',async()=>{
  const dom=new JSDOM(html,{url:'https://cloudnest.example/?preview=admin',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window;const errors=[];
@@ -13,7 +13,7 @@ test('CMS draft renders content, founders, service details and articles without 
  w.CSS={escape:v=>v};w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
  w.sessionStorage.setItem('cn-preview-content',JSON.stringify(data));
  const original=w.document.body.append.bind(w.document.body);
- w.document.body.append=(...nodes)=>{for(const node of nodes){if(node.tagName==='SCRIPT'){try{w.eval(scripts[node.src.split('/').pop()]);node.onload()}catch(e){errors.push(e);node.onerror?.()}}else original(node)}};
+ w.document.body.append=(...nodes)=>{for(const node of nodes){if(node.tagName==='SCRIPT'){if(node.type==='module')continue;try{w.eval(scripts[node.src.split('/').pop()]);node.onload()}catch(e){errors.push(e);node.onerror?.()}}else original(node)}};
  await w.eval(scripts['cms.js']);
  assert.equal(errors.length,0,errors.map(String).join('\n'));
  assert.equal(w.document.querySelectorAll('.service-card').length,5);

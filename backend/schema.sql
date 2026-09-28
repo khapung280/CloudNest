@@ -32,3 +32,10 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 );
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS messages_date ON messages(created_at DESC);
+CREATE TABLE IF NOT EXISTS reviews (
+ id uuid PRIMARY KEY, name text NOT NULL, email text NOT NULL,
+ rating integer NOT NULL CHECK (rating BETWEEN 1 AND 5), comment text NOT NULL,
+ status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+ reply text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reviews_status_date ON reviews(status,created_at DESC);

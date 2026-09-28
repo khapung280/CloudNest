@@ -83,3 +83,15 @@ export function validateMessage(x){
  if(!out.name||!/^\S+@\S+\.\S+$/.test(out.email)||out.message.length<10)throw new Error('Add your name, a valid email and a message of at least 10 characters.');
  return out;
 }
+export function validateReview(input){
+ if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid review.');
+ const out={};
+ for(const [key,max]of Object.entries({name:100,email:200,comment:2000})){
+  if(typeof input[key]!=='string')throw new Error('Add your name, email and comment.');
+  out[key]=input[key].trim();
+  if(!out[key]||out[key].length>max)throw new Error(`Check your ${key}.`);
+ }
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out.email)||out.comment.length<10)throw new Error('Use a valid email and a comment of at least 10 characters.');
+ if(!Number.isInteger(input.rating)||input.rating<1||input.rating>5)throw new Error('Choose a rating from 1 to 5.');
+ return {...out,rating:input.rating};
+}
