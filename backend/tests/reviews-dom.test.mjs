@@ -24,8 +24,8 @@ test('reviews escape visitor content, paginate, retain failed forms and show pen
  const submit=()=>form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
  submit();await until(()=>d.querySelector('#review-status').textContent.includes('try again'));
  assert.equal(form.elements.name.value,'A visitor');assert.equal(form.querySelector('button').disabled,false);
- fail=false;submit();await until(()=>d.querySelector('#review-status').textContent.includes('awaiting approval'));
- assert.equal(sent.rating,4);assert.equal(form.elements.name.value,'');assert.equal(d.querySelectorAll('.review-card').length,2);
+ fail=false;submit();await until(()=>d.querySelector('#review-status').textContent.includes('after admin approval'));
+ assert.equal(d.querySelector('#review-receipt').hidden,false);assert.match(d.querySelector('#review-receipt').textContent,/awaiting approval/);assert.equal(d.querySelector('#review-status').dataset.state,'success');assert.equal(sent.rating,4);assert.equal(form.elements.name.value,'');assert.equal(d.querySelectorAll('.review-card').length,2);
  w.close();
 });
 test('planner preserves visitor message and transfers selected scope to the enquiry',()=>{

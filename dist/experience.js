@@ -9,6 +9,15 @@
  const base=window.CLOUD_NEST_API_ORIGIN||location.origin;
  const preview=new URLSearchParams(location.search).get('preview')==='admin';
  if(preview){$('#review-form [type=submit]').disabled=true;$('#review-status').textContent='Draft preview. Submit reviews from the public website.'}
+ // A local receipt makes moderation visible without publishing unapproved content.
+ const receipt=document.createElement('div');receipt.id='review-receipt';receipt.hidden=true;receipt.setAttribute('role','status');$('.review-layout').before(receipt);
+ const hint=document.createElement('p');hint.className='review-flow';hint.textContent='01 Write your review  →  02 Team approval  →  03 Published here';$('#reviews .section-heading').after(hint);
+ const ratingHint=document.createElement('p');ratingHint.id='rating-hint';ratingHint.textContent='Choose your rating';$('.rating-field').append(ratingHint);
+ $('#review-form').addEventListener('change',e=>{if(e.target.name==='rating')ratingHint.textContent=['','Poor','Fair','Good','Very good','Excellent'][Number(e.target.value)]});
+ const counter=document.createElement('small');counter.id='review-counter';counter.textContent='0 / 2000 characters';const comment=$('#review-form textarea');comment.after(counter);comment.addEventListener('input',()=>{counter.textContent=comment.value.length+' / 2000 characters'});
+ const progress=document.createElement('div');progress.className='reading-progress';progress.setAttribute('aria-hidden','true');document.body.append(progress);
+ let scheduled=false;const updateProgress=()=>{scheduled=false;const max=document.documentElement.scrollHeight-innerHeight;progress.style.transform='scaleX('+(max>0?Math.min(1,Math.max(0,scrollY/max)):0)+')'};
+ addEventListener('scroll',()=>{if(!scheduled){scheduled=true;requestAnimationFrame(updateProgress)}},{passive:true});
  let page=1,loading=false;
  const element=(tag,text,cls)=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e};
  async function loadReviews(append=false){
@@ -20,7 +29,9 @@
    const list=$('#review-list');if(!append)list.replaceChildren();
    for(const r of result.reviews){
     const card=element('article','','review-card');
-    const meta=element('div','','review-meta');meta.append(element('strong',r.name),element('span',r.rating+' / 5','review-rating'));card.append(meta);
+    const meta=element('div','','review-meta'),identity=element('div','','review-identity');
+    const avatar=element('span',r.name.trim().split(/\s+/).map(n=>n[0]).slice(0,2).join('').toUpperCase(),'review-avatar');avatar.setAttribute('aria-hidden','true');
+    identity.append(avatar,element('strong',r.name));const stars=element('span','★'.repeat(r.rating)+'☆'.repeat(5-r.rating),'review-rating');stars.setAttribute('aria-label',r.rating+' out of 5 stars');meta.append(identity,stars);card.append(meta);
     card.append(element('p',r.comment,'review-comment'));
     const time=element('time',new Date(r.created_at).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}));time.dateTime=r.created_at;card.append(time);
     if(r.reply){const reply=element('div','','studio-reply');reply.append(element('strong','Studio reply'),element('p',r.reply));card.append(reply)}
@@ -40,13 +51,15 @@
  $('#review-form').addEventListener('submit',async e=>{
   e.preventDefault();const form=e.currentTarget,button=form.querySelector('[type=submit]'),status=$('#review-status');
   if(preview||button.disabled||!form.reportValidity())return;
-  button.disabled=true;button.textContent='Submitting...';status.textContent='';
+  button.disabled=true;button.textContent='Submitting...';status.textContent='';status.removeAttribute('data-state');
   const fd=new FormData(form),body=Object.fromEntries(fd);body.rating=Number(body.rating);
   try{
    const response=await fetch(base+'/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
    const result=await response.json();if(!response.ok)throw new Error(result.error||'Review could not be submitted.');
-   status.textContent='Thank you. Your review is awaiting approval.';form.reset();
-  }catch(error){status.textContent=error.name==='TimeoutError'?'Request timed out. Please try again.':error.message||'Unable to submit. Please try again.'}
+   status.dataset.state='success';status.textContent='Review received. It will appear publicly after admin approval.';
+   receipt.replaceChildren(element('span','SUBMITTED SUCCESSFULLY','receipt-label'),element('h3','Thank you, '+body.name.trim()+'.'),element('p','Your '+body.rating+'-star review is awaiting approval. This confirmation is visible only in this tab.'),element('blockquote',body.comment,'receipt-comment'));
+   receipt.hidden=false;form.reset();counter.textContent='0 / 2000 characters';ratingHint.textContent='Choose your rating';receipt.scrollIntoView?.({behavior:'smooth',block:'center'});
+  }catch(error){status.dataset.state='error';status.textContent=error.name==='TimeoutError'?'Request timed out. Please try again.':error.message||'Unable to submit. Please try again.'}
   finally{button.disabled=false;button.textContent='Submit review'}
  });
 
