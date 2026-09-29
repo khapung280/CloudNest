@@ -39,6 +39,6 @@ Visitors can leave a 1-5 star review and comment. Submissions are stored as pend
 
 The project planner builds a brief from selected services and features, preserving any existing enquiry text. The visitor still confirms and sends the enquiry through the existing contact form.
 
-The hero loads pinned Three.js 0.180.0 from jsDelivr. It runs at a capped frame rate, stops outside the viewport or in a background tab, respects reduced motion, and has a pause button. Data-saving connections keep the existing artwork. If the CDN or WebGL is unavailable, the artwork remains visible and forms still work.
+The hero uses the same CSS artwork animation in all browsers: automatic floating, gentle scaling, light sweeps and particles. No WebGL, external 3D library or play/pause control is used. System reduced-motion preferences are respected.
 
-Deploy all changed files together. The existing Vercel build command runs `npm run migrate`, creating the reviews table without removing current content, accounts or enquiries. No new environment variables or paid services are required. After deployment, submit a test review, approve it in **Admin > Reviews**, and check that it appears on the homepage with no email address. Check the 3D scene and forms on desktop and mobile before treating the visual update as verified.
+Deploy all changed files together. The existing Vercel build command runs `npm run migrate`, creating the reviews table without removing current content, accounts or enquiries. No new environment variables or paid services are required. After deployment, submit a test review, approve it in **Admin > Reviews**, and check that it appears on the homepage with no email address. Check the artwork animation and forms on desktop and mobile.

@@ -3,11 +3,7 @@
  const $=s=>document.querySelector(s);
  const contact=$('#contact');contact.before($('#planner'),$('#reviews'));
  const nav=document.createElement('a');nav.href='#reviews';nav.className='nav-link';nav.textContent='Reviews';$('#navigation').insertBefore(nav,$('#navigation .mobile-contact'));
- const hero=$('.hero');
- const stage=document.createElement('div');stage.id='hero-scene';stage.setAttribute('aria-hidden','true');hero.prepend(stage);
- const controls=document.createElement('div');controls.className='scene-controls';controls.innerHTML='<span>DESIGN IN ANOTHER DIMENSION</span><button type="button" id="scene-toggle" aria-label="Pause 3D animation" title="Pause 3D animation" hidden>&#10074;&#10074;</button>';
- hero.append(controls);
- const module=document.createElement('script');module.type='module';module.src='/hero-scene.js';document.body.append(module);
+ // Use the shared CSS artwork animation on every browser; no WebGL replacement.
  const quick=document.createElement('a');quick.className='hero-planner-link';quick.href='#planner';quick.textContent='Build your project brief';$('.hero-content').append(quick);
 
  const base=window.CLOUD_NEST_API_ORIGIN||location.origin;
